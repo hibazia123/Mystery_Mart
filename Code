@@ -1,0 +1,266 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <cstdlib>
+#include <ctime>
+#include <fstream>
+using namespace std;
+
+// ANSI color codes
+#define RESET   "\033[0m"
+#define RED     "\033[31m"
+#define GREEN   "\033[32m"
+#define YELLOW  "\033[33m"
+#define BLUE    "\033[34m"
+#define MAGENTA "\033[35m"
+#define CYAN    "\033[36m"
+#define WHITE   "\033[37m"
+#define BOLD    "\033[1m"
+
+// ------------------- PRODUCT MODULE -------------------
+class Product {
+public:
+    int id;
+    string name;
+    string category;
+    double price;
+    Product(int i, string n, string c, double p)
+        : id(i), name(n), category(c), price(p) {}
+
+    void display() {
+        cout << BOLD << id << RESET << ". " << name 
+             << " | " << YELLOW << "$" << price << RESET
+             << " | " << CYAN << category << RESET << endl;
+    }
+};
+
+// ------------------- CART MODULE -------------------
+class Cart {
+public:
+    vector<Product> items;
+
+    void addProduct(Product p) {
+        items.push_back(p);
+        cout << GREEN << p.name << " added to cart!" << RESET << endl;
+    }
+
+    void removeProduct(int id) {
+        bool found = false;
+        for (size_t i = 0; i < items.size(); i++) {
+            if (items[i].id == id) {
+                cout << RED << "Removed " << items[i].name << " from cart." << RESET << endl;
+                items.erase(items.begin() + i);
+                found = true;
+                break;
+            }
+        }
+        if (!found) cout << RED << "Product not in cart." << RESET << endl;
+    }
+
+    void viewCart() {
+        if (items.empty()) { 
+            cout << RED << "Cart is empty!" << RESET << endl; 
+            return; 
+        }
+        double total = 0;
+        cout << BOLD << "\n--- Your Cart ---" << RESET << endl;
+        for (auto &p : items) { 
+            p.display(); 
+            total += p.price; 
+        }
+        cout << BOLD << YELLOW << "Total: $" << total << RESET << endl;
+    }
+
+    double total() {
+        double sum = 0;
+        for (auto &p : items) sum += p.price;
+        return sum;
+    }
+
+    void clear() { items.clear(); }
+};
+
+// ------------------- USER MODULE -------------------
+class User {
+public:
+    string username;
+    int loyaltyPoints;
+    Cart cart;
+
+    User(string name) : username(name), loyaltyPoints(0) {}
+
+    void saveData() {
+        ofstream file(username + "_data.txt");
+        file << loyaltyPoints << endl;
+        for (auto &p : cart.items)
+            file << p.id << "," << p.name << "," << p.category << "," << p.price << endl;
+        file.close();
+    }
+
+    void loadData() {
+        ifstream file(username + "_data.txt");
+        if (!file) return;
+        string line;
+        getline(file, line);
+        loyaltyPoints = stoi(line);
+
+        while (getline(file, line)) {
+            if (line.empty()) continue;
+            int id; string name, cat; double price;
+            size_t pos1 = line.find(',');
+            id = stoi(line.substr(0, pos1));
+            size_t pos2 = line.find(',', pos1 + 1);
+            name = line.substr(pos1 + 1, pos2 - pos1 - 1);
+            size_t pos3 = line.find(',', pos2 + 1);
+            cat = line.substr(pos2 + 1, pos3 - pos2 - 1);
+            price = stod(line.substr(pos3 + 1));
+            cart.addProduct(Product(id, name, cat, price));
+        }
+        file.close();
+    }
+};
+
+// ------------------- MARKETPLACE MODULE -------------------
+class Marketplace {
+public:
+    vector<Product> products;
+
+    Marketplace() {
+        products.push_back(Product(1, "Slippers", "Cozy", 50));
+        products.push_back(Product(2, "Coffee Mug", "Drinkware", 20));
+        products.push_back(Product(3, "Hat", "Fashion", 30));
+        products.push_back(Product(4, "Notebook", "Stationery", 15));
+        products.push_back(Product(5, "Headphones", "Electronics", 100));
+    }
+
+    void showAll() {
+        cout << BOLD << BLUE << "\n--- Products ---" << RESET << endl;
+        for (auto &p : products) p.display();
+    }
+
+    Product getByID(int id) {
+        for (auto &p : products) if (p.id == id) return p;
+        return Product(0, "NotFound", "None", 0);
+    }
+
+    vector<Product> filterByCategory(string category) {
+        vector<Product> res;
+        for (auto &p : products) if (p.category == category) res.push_back(p);
+        return res;
+    }
+
+    Product mysteryBox() {
+        int index = rand() % products.size();
+        return products[index];
+    }
+};
+
+// ------------------- MOOD RECOMMENDER -------------------
+class MoodRecommender {
+public:
+    static void recommend(Marketplace &mp, string mood) {
+        cout << BOLD << MAGENTA << "\n--- Recommendations for mood: " << mood << " ---" << RESET << endl;
+        vector<Product> res;
+        if (mood == "Chill") res = mp.filterByCategory("Cozy");
+        else if (mood == "Work") res = mp.filterByCategory("Stationery");
+        else res = mp.products;
+
+        for (auto &p : res) p.display();
+    }
+};
+
+// ------------------- CHECKOUT MODULE -------------------
+class Checkout {
+public:
+    static void process(User &user) {
+        double total = user.cart.total();
+        cout << BOLD << "\nTotal bill: " << YELLOW << "$" << total << RESET << endl;
+        cout << "Applying loyalty points: " << CYAN << user.loyaltyPoints << RESET << endl;
+        if (user.loyaltyPoints > 0) {
+            total -= min((double)user.loyaltyPoints, total);
+            user.loyaltyPoints = 0;
+        }
+        cout << BOLD << "Final bill: " << YELLOW << "$" << total << RESET << endl;
+        user.cart.clear();
+        user.loyaltyPoints += 10;
+        cout << GREEN << "Purchase complete! Earned 10 loyalty points." << RESET << endl;
+    }
+};
+
+// ------------------- CLI / INTERFACE MODULE -------------------
+class CLI {
+public:
+    User user;
+    Marketplace mp;
+
+    CLI(string username) : user(username) {
+        user.loadData();
+    }
+
+    void start() {
+        int choice;
+        do {
+            system("cls"); // use "clear" for Linux/Mac
+
+            cout << BOLD << BLUE << "\n==============================" << RESET << endl;
+            cout << BOLD << "Welcome, " << user.username << endl;
+            cout << "Loyalty Points: " << CYAN << user.loyaltyPoints << RESET << endl;
+            cout << BOLD << BLUE << "==============================" << RESET << endl;
+
+            cout << BOLD << "Menu:\n" << RESET;
+            cout << "1. Show Products\n";
+            cout << "2. Add to Cart\n";
+            cout << "3. View Cart\n";
+            cout << "4. Checkout\n";
+            cout << "5. Mystery Box\n";
+            cout << "6. Mood Recommendations\n";
+            cout << "7. Exit\n";
+            cout << "Enter your choice: ";
+            cin >> choice;
+
+            switch(choice) {
+                case 1: mp.showAll(); break;
+                case 2: {
+                    int pid; cout << "Enter Product ID to add: "; cin >> pid;
+                    Product p = mp.getByID(pid);
+                    if(p.id != 0) { user.cart.addProduct(p); user.loyaltyPoints +=5; cout << GREEN << "5 Loyalty Points added!\n" << RESET;}
+                    else cout << RED << "Invalid Product ID!\n" << RESET;
+                    break;
+                }
+                case 3: user.cart.viewCart(); break;
+                case 4: Checkout::process(user); break;
+                case 5: {
+                    Product p = mp.mysteryBox();
+                    cout << "\nMystery Box! You got: ";
+                    p.display();
+                    user.cart.addProduct(p);
+                    user.loyaltyPoints +=5;
+                    cout << GREEN << "5 Loyalty Points added!\n" << RESET;
+                    break;
+                }
+                case 6: {
+                    string mood; cout << "Enter mood (Chill/Work/Other): "; cin >> mood;
+                    MoodRecommender::recommend(mp, mood);
+                    break;
+                }
+                case 7: user.saveData(); cout << "\nExiting... Bye!\n"; break;
+                default: cout << RED << "Invalid choice!\n" << RESET;
+            }
+
+            if(choice != 7) { cout << "\nPress Enter to continue..."; cin.ignore(); cin.get(); }
+
+        } while(choice != 7);
+    }
+};
+
+// ------------------- MAIN -------------------
+int main() {
+    srand(time(0));
+    string name;
+    cout << "Enter username: ";
+    cin >> name;
+
+    CLI cli(name);
+    cli.start();
+    return 0;
+}
