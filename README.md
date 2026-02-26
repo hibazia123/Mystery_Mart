@@ -62,10 +62,10 @@ Gamification techniques
 
 Compile the C++ code using a modern compiler:
 
-g++ main.cpp -o Marketplace
+g++ main.cpp -o Mystery_Mart
 
 Run the executable:
 
-./Marketplace
+./Mystery_Mart
 
 Follow the interactive CLI prompts to shop, earn points, and explore gamification features.
