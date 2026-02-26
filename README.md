@@ -1,4 +1,4 @@
-#🎮Mystery_Mart – Gamified CLI Marketplace
+#Mystery_Mart – Gamified CLI Marketplace
 
 A fun, interactive, and gamified mini marketplace implemented in C++ using OOP concepts. This project demonstrates an engaging CLI shopping experience with gamification features and file-based data persistence.
 
